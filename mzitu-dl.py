@@ -1,27 +1,40 @@
-import requests, os, sys
+import os
+import requests
+import sys
 from lxml import html
 
 DEBUG = False
 
 
-def log(msg):
-    if DEBUG:
+def log(msg, is_error=False):
+    if DEBUG or is_error:
         print(msg)
 
 
 def replace_special_symbols(string):
-    return string.replace("\\", "＼").replace("/", "／").replace(":", "：").replace("*", "＊").replace("?", "？").replace("\"", "＂").replace("<", "＜").replace(">", "＞").replace("|", "｜")
+    return string.replace("\\", "＼").replace("/", "／").replace(":", "：").replace("*", "＊").replace("?", "？").replace(
+        "\"", "＂").replace("<", "＜").replace(">", "＞").replace("|", "｜")
 
 
 def get_image_links(image_url):
-    response = requests.get(image_url).content
+    try:
+        response = requests.get(image_url).content
+    except Exception as e:
+        log("Error occurs when getting image links", True)
+        log(e, True)
+        return
     image_page_html = html.fromstring(response)
     main_image = image_page_html.xpath("//div[@class='main-image']//img/@src")
     return main_image
 
 
 def get_image_count_and_title(url):
-    response = requests.get(url).content
+    try:
+        response = requests.get(url).content
+    except Exception as e:
+        log("Error occurs when get the image set page", True)
+        log(e, True)
+        return
     page_html = html.fromstring(response)
     last_page = page_html.xpath("//div[@class='pagenavi']/a[last()-1]/span")
     image_count = int(last_page[0].text)
@@ -46,7 +59,11 @@ def download_image(set_id):
             log("Saving as " + filename + ".")
             if not os.path.exists(title + "/" + filename):
                 with open(title + "/" + filename, "wb") as f:
-                    f.write(requests.get(link).content)
+                    try:
+                        f.write(requests.get(link).content)
+                    except Exception as e:
+                        log("Error occurs when downloading file" + filename, True)
+                        log(e, True)
 
 
 def mzitu_dl():
@@ -60,7 +77,12 @@ def mzitu_dl():
 
 def download_all():
     site_url = "http://www.mzitu.com/all/"
-    response = requests.get(site_url).content
+    try:
+        response = requests.get(site_url).content
+    except Exception as e:
+        log("Error occurs when get all posts", True)
+        log(e, True)
+        return
     all_html = html.fromstring(html.tostring(html.fromstring(response).xpath("//div[@class='all']")[0]))
     years_str_html = all_html.xpath("//div[@class='year']")
     archives_html = all_html.xpath("//ul[@class='archives']")
