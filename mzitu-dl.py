@@ -42,10 +42,13 @@ def get_image_count_and_title(url):
     return image_count, title
 
 
-def download_image(set_id):
+def download_image(set_id, dir_str=""):
     url = "http://mzitu.com/" + str(set_id)
     image_count, title = get_image_count_and_title(url)
-    title = replace_special_symbols(title)
+    if not dir_str:
+        title = replace_special_symbols(title)
+    else:
+        title = dir_str
     if not os.path.exists(title):
         os.mkdir(title)
     else:
@@ -101,9 +104,18 @@ def download_all():
                 os.mkdir(month_str)
             os.chdir(month_str)
             urls_html = month_html.xpath("//li/p[@class='url']/a")
-            for url_html in urls_html:
+            url_texts = html.fromstring(html.tostring(month_html.xpath("//li/p[@class='url']")[0])).xpath(
+                "//br/preceding::text()")
+            assert (len(url_texts) % 3 == 0)
+            assert (int(len(url_texts) / 3) == len(urls_html))
+            for theme_num in range(0, len(urls_html)):
+                date_str = replace_special_symbols(url_texts[theme_num * 3])
+                theme_str = replace_special_symbols(url_texts[theme_num * 3 + 1])
+                dir_str = date_str + theme_str
+                url_html = urls_html[theme_num]
                 set_id = int(os.path.basename(url_html.xpath("@href")[0]))
-                download_image(set_id)
+                log(year_str + " " + month_str + " " + dir_str, True)
+                download_image(set_id, dir_str)
             os.chdir("..")
         os.chdir("..")
 
